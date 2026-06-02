@@ -102,7 +102,7 @@
   <div class="wrapper">
     <div class="card">
       <h1>Leman Timegrapher v4.7</h1>
-      <p class="subtitle">주인님 표 스마트 주파수 디바이더 하이엔드 엔진</p>
+      <p class="subtitle">다이내믹 가변 락아웃 × 스마트 주파수 디바이더 융합판</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -138,6 +138,9 @@
     let measurementStartTime = 0;
     let rawPoints = [];   
     let yellowDots = [];  
+
+    // 🚀 [v4.7 핵심 변수] 7초 초기 스캔 단계에서는 28800의 62.5ms 더블 피크까지 다 먹도록 장벽을 45ms로 전격 오픈합니당!
+    let minPeakInterval = 0.045; 
 
     const DETECT_DURATION = 7; 
     const MEASURE_DURATION = 60; 
@@ -190,6 +193,7 @@
         currentTargetInterval = 3600 / 21600;
         threshold = 0.008; 
         maxDetectedPeak = 0; 
+        minPeakInterval = 0.045; // 재시작 시 안전 마진 초기화
         bpmDisplay.innerText = "SCANNING";
         drawGraph();
 
@@ -236,7 +240,8 @@
             if (inputArray[i] > threshold) {
               let currentTime = audioCtx.currentTime + (i / audioCtx.sampleRate);
               
-              if (currentTime - lastPeakTime > 0.08) {
+              // 🚀 [v4.7 코어 패치] 고정 0.08초 대신 다이내믹 가변 변수인 minPeakInterval을 추적합니당!
+              if (currentTime - lastPeakTime > minPeakInterval) {
                 let currentPulseTime = currentTime;
                 lastPeakTime = currentPulseTime;
 
@@ -338,7 +343,7 @@
                   let medianInterval = diffs[Math.floor(diffs.length / 2)];
                   let estimatedBph = Math.round((1 / medianInterval) * 3600);
 
-                  console.log("하드웨어 오리지널 추정 BPH:", estimatedBph);
+                  console.log("하드웨어 순수 감지 BPH:", estimatedBph);
 
                   let checkBph = estimatedBph;
                   if (checkBph > 39000) {
@@ -354,6 +359,11 @@
 
                   currentTargetInterval = 3600 / currentBph;
 
+                  // 🚀 [v4.7 코어 대개혁 결계] 60초 본 계측 시에는 강제 휴식기를 
+                  // 해당 시계 표준 주기의 60%로 가변 설정하여 오차 도트 차트에 잔향 유입을 원천 봉쇄합니당!!
+                  minPeakInterval = currentTargetInterval * 0.6; 
+                  console.log("🔒 본 계측 적용 다이내믹 가변 락아웃 장벽(초):", minPeakInterval);
+
                   if (currentBph === 36000) {
                     bpmDisplay.innerHTML = `36000 BPH<div style="font-size:12px; font-weight:600; color:#ff3b30; margin-top:2px; letter-spacing: -0.3px;">(또는 빈티지 무브먼트 18000 BPH일 수도 있습니다)</div>`;
                   } else {
@@ -362,13 +372,14 @@
                 } else {
                   currentBph = 28800;
                   currentTargetInterval = 3600 / 28800;
+                  minPeakInterval = currentTargetInterval * 0.6;
                   bpmDisplay.innerText = "FAIL (RETRY)";
                 }
               }
 
               let measureTimeLeft = totalDuration - elapsedSeconds;
               timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
-              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 하이엔드 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>주인님 표 알고리즘이 무브먼트 리듬을 완전 제어 중입당 🛡️</span>`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 다이내믹 락아웃 모드!</b><br><span style='font-size:13px; color:#30d158;'>주인님 표 디바이더 기전이 주파수 혼선을 완벽 평정했습당 🛡️</span>`;
             }
           } else {
             clearInterval(countdownInterval);
@@ -393,7 +404,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.7 락온 무결판] 총 ${yellowDots.length}개 노란 도트 누적 결과 반영 완료!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.7 완전체] 총 ${yellowDots.length}개 노란 도트 정밀 벡터 추적 완료!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
