@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v3.9</title>
+  <title>Leman Timegrapher Ultra v4.0</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -100,8 +100,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v3.9</h1>
-      <p class="subtitle">오토 스케일 장벽 × 실시간 슬로프 트래킹 레이더</p>
+      <h1>Leman Timegrapher v4.0</h1>
+      <p class="subtitle">실시간 동적 스캔 배리어 × 슬로프 트래킹 통합판</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -227,7 +227,7 @@
           for (let i = 0; i < len; i++) {
             let absVal = Math.abs(inputArray[i]);
             
-            if (!isBphLocked && absVal > maxDetectedPeak) {
+            if (absVal > maxDetectedPeak) {
               maxDetectedPeak = absVal;
             }
 
@@ -267,24 +267,21 @@
                       } else {
                         let lastYellow = yellowDots[yellowDots.length - 1];
                         
-                        // 🚀 [v3.9 방안 1 핵심 가동단: 실시간 슬로프 인공지능 벡터 추적 회로]
                         let estimatedSlope = 0;
                         if (yellowDots.length >= 4) {
                           let totalUnwrappedDRes = 0;
                           for (let j = 1; j < yellowDots.length; j++) {
                             let dRes = yellowDots[j].res - yellowDots[j-1].res;
-                            // 톱니 래핑 오차 마진 보정 언랩 기전
                             if (dRes > currentTargetInterval / 2) dRes -= currentTargetInterval;
                             if (dRes < -currentTargetInterval / 2) dRes += currentTargetInterval;
                             totalUnwrappedDRes += dRes;
                           }
                           let dx = lastYellow.x - yellowDots[0].x;
                           if (dx > 0) {
-                            estimatedSlope = totalUnwrappedDRes / dx; // 인덱스당 오차 이동 기울기 확보!!
+                            estimatedSlope = totalUnwrappedDRes / dx; 
                           }
                         }
 
-                        // 직전 점에서 기울기 속도만큼 전진한 '미래의 예측 오차 지점'을 타격 타깃으로 설정!
                         let dX = candidateAvgX - lastYellow.x;
                         let predictedRes = lastYellow.res + (estimatedSlope * dX);
                         
@@ -292,7 +289,6 @@
                         if (diff > currentTargetInterval / 2) diff -= currentTargetInterval;
                         if (diff < -currentTargetInterval / 2) diff += currentTargetInterval;
 
-                        // 평평한 수평선이 아닌, '대각선 슬로프 궤적 기준 5% 가드 밴드' 집행! 
                         if (Math.abs(diff) < currentTargetInterval * 0.05) {
                           acceptYellow = true;
                         }
@@ -319,6 +315,11 @@
 
           if (overallRemaining > 0) {
             if (elapsedSeconds <= DETECT_DURATION) {
+              // 🚀 [v4.0 핵심 엔진 패치] 7초 스캔 단계에서도 실시간으로 스레시홀드 장벽을 업데이트하여 
+              // 프리미엄 무브먼트의 공명 잔향음이 스캔 데이터를 교란하지 못하게 원천 봉쇄합니당!!
+              if (maxDetectedPeak > 0) {
+                threshold = Math.min(0.08, Math.max(0.015, maxDetectedPeak * 0.40));
+              }
               timerDisplay.innerText = `🔎 스펙 분석 중... ${elapsedSeconds}/${DETECT_DURATION}초`;
             } else {
               if (!isBphLocked) {
@@ -382,7 +383,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[슬로프 무손실 기전] 총 ${yellowDots.length}개 노란 도트 누적 추세 기반 완벽 매칭!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[스캔 배리어 빌드업] 총 ${yellowDots.length}개 노란 도트 누적 추세 기반 완벽 매칭!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
@@ -420,17 +421,14 @@
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
       }
 
-if (!isBphLocked) {
+      if (!isBphLocked) {
         ctx.fillStyle = '#86868b'; 
-        // 🚀 주인님의 특명! 답답한 13px 버리고 시원시원한 20px 정밀 명장 폰트로 도킹!!
-        ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif'; 
+        // 🚀 [주인님 명제 반영] 아이폰 스크린에서 대방 시원시원한 18px 명장 폰트 & 30px 마진 2줄 줄바꿈 배치 완료!
+        ctx.font = '18px -apple-system, BlinkMacSystemFont, sans-serif'; 
         ctx.textAlign = 'center';
         
-        // 🚀 첫 번째 줄 (20px 체급에 맞춰 Y축을 정중앙에서 -15픽셀 플로팅!)
         ctx.fillText('🔊 가동 버튼을 누르고', canvas.width / 2, canvas.height / 2 - 15);
-        
-        // 🚀 두 번째 줄 (윗줄이랑 절대 엉키지 않게 Y축을 +15픽셀 다운 정렬!)
-        ctx.fillText('아이폰 본체 바디 위에 시계를 올리셔용', canvas.width / 2, canvas.height / 2 + 15);
+        ctx.fillText('아이폰 본체 스틸/알루미늄 바디 위에 시계를 올리셔용', canvas.width / 2, canvas.height / 2 + 15);
         return;
       }
 
@@ -442,7 +440,7 @@ if (!isBphLocked) {
       }
       let scaleY = (canvas.height / 2) / maxResBound;
 
-      // 1. 원본 날것 녹색 점 (100% 솔리드 네온 그린 - 맑은 공명 평행선 확인용)
+      // 1. 원본 날것 녹색 점 (100% 솔리드 네온 그린)
       ctx.fillStyle = '#30d158';
       for (let p of rawPoints) {
         let canvasX = (p.x / maxTicks) * canvas.width;
@@ -453,7 +451,7 @@ if (!isBphLocked) {
         }
       }
 
-      // 2. 🚀 슬로프 가드 밴드를 통과해 절벽 궤적을 뚫고 완벽 결착된 노란 도트 체인!!
+      // 2. 슬로프 가드 밴드를 통과해 완벽 결착된 노란 도트 체인
       ctx.fillStyle = '#ffcc00'; 
       for (let p of yellowDots) {
         let canvasX = (p.x / maxTicks) * canvas.width;
