@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Leman Timegrapher Ultra v3.9</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <style>
+    :root {
+      --safari-padding-top: env(safe-area-inset-top, 40px);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f5f5f7;
+      color: #1d1d1f;
+      margin: 0;
+      padding: calc(var(--safari-padding-top) + 20px) 20px 20px 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 450px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 25px 22px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+      margin-bottom: 15px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    h1 { font-size: 24px; margin: 0 0 4px 0; color: #000; font-weight: 700; }
+    .subtitle { font-size: 13px; color: #86868b; margin: 0 0 18px 0; letter-spacing: -0.3px; }
+    
+    .timer-box {
+      font-size: 14px;
+      font-weight: 600;
+      color: #0071e3;
+      background: #e8f3ff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    
+    .graph-container {
+      width: 100%;
+      height: 160px;
+      background: #1c1c1e;
+      border-radius: 18px;
+      margin: 12px 0;
+      box-sizing: border-box;
+      padding: 5px;
+      border: 1px solid #2c2c2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+    
+    .status-val {
+      font-size: 46px; font-weight: 800; margin: 5px 0; color: #1d1d1f;
+      letter-spacing: -1px;
+    }
+    .result-text { 
+      font-size: 15px; font-weight: 600; color: #0071e3; min-height: 26px;
+      margin: 8px 0 15px 0; line-height: 1.4;
+    }
+    
+    .warning {
+      font-size: 11px; color: #ff3b30; line-height: 1.5; font-weight: 500;
+      background: #fff2f1; padding: 12px; border-radius: 14px; margin: 0;
+      text-align: left;
+    }
+    
+    .action-btn {
+      background-color: #0071e3;
+      color: white;
+      border: none;
+      padding: 18px;
+      font-size: 18px;
+      font-weight: 600;
+      border-radius: 16px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(0,113,227,0.2);
+      transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .action-btn:active { background-color: #005bb5; transform: scale(0.98); }
+    .action-btn:disabled { background-color: #aeaeae; box-shadow: none; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+  <div class="wrapper">
+    <div class="card">
+      <h1>Leman Timegrapher v3.9</h1>
+      <p class="subtitle">오토 스케일 장벽 × 실시간 슬로프 트래킹 레이더</p>
+      
+      <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
+      
+      <div class="graph-container">
+        <canvas id="timegrapher-canvas" width="600" height="220"></canvas>
+      </div>
+      
+      <div class="status-val" id="bpm-display">-- BPH</div>
+      <div id="result-display" class="result-text">아래 버튼을 눌러 계측을 시작하세요</div>
+      
+      <p class="warning">⚠️ 자성 주의: 아이폰 뒷면 맥세이프 근처에는 시계를 절대 대지 마세요! 본체 위에 용두를 살포시 거치해 주시면 최고의 SNR 공명이 일어납니당.</p>
+    </div>
+
+    <button id="start-btn" class="action-btn">오디오 계측 엔진 가동</button>
+  </div>
+
+  <script>
+    let audioCtx;
+    let microphone;
+    let gainNode;    
+    let bpfNode; 
+    let javascriptNode;
+    let countdownInterval;
+    
+    let scanTimestamps = [];
+    let isBphLocked = false; 
+    let currentBph = 21600; 
+    let currentTargetInterval = 3600 / 21600;
+    
+    let threshold = 0.008;      
+    let maxDetectedPeak = 0;    
+    
+    let measurementStartTime = 0;
+    let rawPoints = [];   
+    let yellowDots = [];  
+
+    const DETECT_DURATION = 7; 
+    const MEASURE_DURATION = 60; 
+
+    function initTimegrapher() {
+      drawGraph(); 
+      const startBtn = document.getElementById('start-btn');
+      if (startBtn) {
+        startBtn.addEventListener('click', initAndRequestMic);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTimegrapher);
+    } else {
+      initTimegrapher();
+    }
+
+    async function initAndRequestMic() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch (e) {
+        console.error("AudioContext 가동 실패:", e);
+      }
+
+      const startBtn = document.getElementById('start-btn');
+      const timerDisplay = document.getElementById('timer-display');
+      const resultDisplay = document.getElementById('result-display');
+      const bpmDisplay = document.getElementById('bpm-display');
+
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          resultDisplay.innerHTML = "❌ <b>마이크 보안 결계 발생!</b><br><span style='font-size:12px; color:#ff3b30;'>반드시 <b>HTTPS 주소</b>에서 가동하셔용!</span>";
+          return;
+        }
+
+        resultDisplay.innerText = "초민감 레이더 활성화 중...";
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+
+        scanTimestamps = [];
+        rawPoints = [];
+        yellowDots = [];
+        isBphLocked = false; 
+        currentBph = 21600;
+        currentTargetInterval = 3600 / 21600;
+        threshold = 0.008; 
+        maxDetectedPeak = 0; 
+        bpmDisplay.innerText = "SCANNING";
+        drawGraph();
+
+        startBtn.disabled = true;
+        startBtn.innerText = "레이더 추적 중 ✔️";
+        startBtn.style.backgroundColor = "#34c759";
+        timerDisplay.style.display = "inline-block";
+        
+        let totalDuration = DETECT_DURATION + MEASURE_DURATION;
+        let elapsedSeconds = 0;
+        
+        timerDisplay.innerText = `🔎 스펙 분석 중... 0/${DETECT_DURATION}초`;
+        resultDisplay.innerText = "아이폰 바디 위에 시계를 거치해 주셔용! 공명 파형 스캔 중입당.";
+
+        microphone = audioCtx.createMediaStreamSource(stream);
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = 45.0; 
+
+        bpfNode = audioCtx.createBiquadFilter();
+        bpfNode.type = 'highpass'; 
+        bpfNode.frequency.value = 2500;          
+
+        javascriptNode = audioCtx.createScriptProcessor(4096, 1, 1);
+        
+        microphone.connect(gainNode);
+        gainNode.connect(bpfNode);
+        bpfNode.connect(javascriptNode);
+        javascriptNode.connect(audioCtx.destination);
+
+        let lastPeakTime = 0;
+
+        javascriptNode.onaudioprocess = function(audioProcessingEvent) {
+          let inputArray = audioProcessingEvent.inputBuffer.getChannelData(0);
+          let len = inputArray.length;
+          
+          for (let i = 0; i < len; i++) {
+            let absVal = Math.abs(inputArray[i]);
+            
+            if (!isBphLocked && absVal > maxDetectedPeak) {
+              maxDetectedPeak = absVal;
+            }
+
+            if (inputArray[i] > threshold) {
+              let currentTime = audioCtx.currentTime + (i / audioCtx.sampleRate);
+              
+              if (currentTime - lastPeakTime > 0.08) {
+                let currentPulseTime = currentTime;
+                lastPeakTime = currentPulseTime;
+
+                if (!isBphLocked) {
+                  scanTimestamps.push(currentPulseTime);
+                } else {
+                  let t = currentPulseTime - measurementStartTime;
+                  let exactBeats = t / currentTargetInterval;
+                  let expectedIndex = Math.round(exactBeats);
+                  
+                  let residual = t - (expectedIndex * currentTargetInterval);
+                  if (residual > currentTargetInterval / 2) residual -= currentTargetInterval;
+                  if (residual < -currentTargetInterval / 2) residual += currentTargetInterval;
+
+                  let newPoint = { x: expectedIndex, t: t, res: residual };
+                  rawPoints.push(newPoint);
+
+                  if (rawPoints.length >= 2) {
+                    let p1 = rawPoints[rawPoints.length - 2];
+                    let p2 = rawPoints[rawPoints.length - 1];
+
+                    if (p2.x - p1.x === 1) {
+                      let candidateAvgX = (p1.x + p2.x) / 2;
+                      let candidateAvgT = (p1.t + p2.t) / 2;
+                      let candidateAvgRes = (p1.res + p2.res) / 2;
+
+                      let acceptYellow = false;
+                      if (yellowDots.length === 0) {
+                        acceptYellow = true;
+                      } else {
+                        let lastYellow = yellowDots[yellowDots.length - 1];
+                        
+                        // 🚀 [v3.9 방안 1 핵심 가동단: 실시간 슬로프 인공지능 벡터 추적 회로]
+                        let estimatedSlope = 0;
+                        if (yellowDots.length >= 4) {
+                          let totalUnwrappedDRes = 0;
+                          for (let j = 1; j < yellowDots.length; j++) {
+                            let dRes = yellowDots[j].res - yellowDots[j-1].res;
+                            // 톱니 래핑 오차 마진 보정 언랩 기전
+                            if (dRes > currentTargetInterval / 2) dRes -= currentTargetInterval;
+                            if (dRes < -currentTargetInterval / 2) dRes += currentTargetInterval;
+                            totalUnwrappedDRes += dRes;
+                          }
+                          let dx = lastYellow.x - yellowDots[0].x;
+                          if (dx > 0) {
+                            estimatedSlope = totalUnwrappedDRes / dx; // 인덱스당 오차 이동 기울기 확보!!
+                          }
+                        }
+
+                        // 직전 점에서 기울기 속도만큼 전진한 '미래의 예측 오차 지점'을 타격 타깃으로 설정!
+                        let dX = candidateAvgX - lastYellow.x;
+                        let predictedRes = lastYellow.res + (estimatedSlope * dX);
+                        
+                        let diff = candidateAvgRes - predictedRes;
+                        if (diff > currentTargetInterval / 2) diff -= currentTargetInterval;
+                        if (diff < -currentTargetInterval / 2) diff += currentTargetInterval;
+
+                        // 평평한 수평선이 아닌, '대각선 슬로프 궤적 기준 5% 가드 밴드' 집행! 
+                        if (Math.abs(diff) < currentTargetInterval * 0.05) {
+                          acceptYellow = true;
+                        }
+                      }
+
+                      if (acceptYellow) {
+                        yellowDots.push({ x: candidateAvgX, t: candidateAvgT, res: candidateAvgRes });
+                      }
+                    }
+                  }
+                }
+
+                requestAnimationFrame(() => {
+                  drawGraph();
+                });
+              }
+            }
+          }
+        };
+
+        countdownInterval = setInterval(() => {
+          elapsedSeconds++;
+          let overallRemaining = totalDuration - elapsedSeconds;
+
+          if (overallRemaining > 0) {
+            if (elapsedSeconds <= DETECT_DURATION) {
+              timerDisplay.innerText = `🔎 스펙 분석 중... ${elapsedSeconds}/${DETECT_DURATION}초`;
+            } else {
+              if (!isBphLocked) {
+                isBphLocked = true;
+                measurementStartTime = audioCtx.currentTime; 
+                rawPoints = [];
+                yellowDots = [];
+                
+                if (maxDetectedPeak > 0) {
+                  threshold = Math.min(0.08, Math.max(0.016, maxDetectedPeak * 0.45));
+                }
+
+                if (scanTimestamps.length >= 5) {
+                  let diffs = [];
+                  for(let j = 1; j < scanTimestamps.length; j++) {
+                    diffs.push(scanTimestamps[j] - scanTimestamps[j-1]);
+                  }
+                  diffs.sort((a, b) => a - b);
+                  let medianInterval = diffs[Math.floor(diffs.length / 2)];
+                  let estimatedBph = Math.round((1 / medianInterval) * 3600);
+
+                  if (estimatedBph >= 16500 && estimatedBph <= 19500) currentBph = 18000;
+                  else if (estimatedBph > 19500 && estimatedBph <= 23500) currentBph = 21600;
+                  else if (estimatedBph > 23500 && estimatedBph <= 26500) currentBph = 25200;
+                  else if (estimatedBph > 26500 && estimatedBph <= 31500) currentBph = 28800;
+                  else currentBph = 28800;
+
+                  currentTargetInterval = 3600 / currentBph;
+                  bpmDisplay.innerText = currentBph + " BPH";
+                } else {
+                  currentBph = 21600;
+                  currentTargetInterval = 3600 / 21600;
+                  bpmDisplay.innerText = "FAIL (RETRY)";
+                }
+              }
+
+              let measureTimeLeft = totalDuration - elapsedSeconds;
+              timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 양방향 레이더 추적 가동!</b><br><span style='font-size:13px; color:#ffcc00;'>초고속 오차 절벽 사선도 완벽 추적 락온 완료! 🛡️</span>`;
+            }
+          } else {
+            clearInterval(countdownInterval);
+            timerDisplay.style.display = "none";
+            startBtn.disabled = false;
+            startBtn.innerText = "재측정 하기";
+            startBtn.style.backgroundColor = "#0071e3";
+            
+            if (yellowDots.length > 10) {
+              let n = yellowDots.length;
+              let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+              for (let p of yellowDots) {
+                sumX += p.x;   
+                sumY += p.t;   
+                sumXY += p.x * p.t;
+                sumXX += p.x * p.x;
+              }
+
+              let denominator = n * sumXX - sumX * sumX;
+              if (denominator !== 0) {
+                let m = (n * sumXY - sumX * sumY) / denominator; 
+                let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
+                
+                let sign = errorSecondsPerDay >= 0 ? "+" : "";
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[슬로프 무손실 기전] 총 ${yellowDots.length}개 노란 도트 누적 추세 기반 완벽 매칭!</span>`;
+              }
+            } else {
+              bpmDisplay.innerText = "-- BPH";
+              resultDisplay.innerText = "❌ 측정 실패! 시계를 아이폰 바디 위에 진동이 잘 통하게 고정하셔용.";
+            }
+
+            if (javascriptNode) javascriptNode.onaudioprocess = null;
+            if (microphone) microphone.disconnect();
+            if (gainNode) gainNode.disconnect();
+            if (bpfNode) bpfNode.disconnect();
+          }
+        }, 1000);
+
+      } catch (err) {
+        resultDisplay.innerText = "마이크 연동 에러 ㅠㅠ";
+        startBtn.disabled = false;
+        startBtn.innerText = "측정 실패";
+        startBtn.style.backgroundColor = "#ff3b30";
+        console.error(err);
+      }
+    }
+
+    function drawGraph() {
+      const canvas = document.getElementById('timegrapher-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // 격자판
+      ctx.strokeStyle = '#2c2c2e'; ctx.lineWidth = 1;
+      for (let y = 36; y < canvas.height; y += 36) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+      }
+      for (let x = 60; x < canvas.width; x += 60) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+      }
+
+if (!isBphLocked) {
+        ctx.fillStyle = '#86868b'; 
+        // 🚀 주인님의 특명! 답답한 13px 버리고 시원시원한 20px 정밀 명장 폰트로 도킹!!
+        ctx.font = '20px -apple-system, BlinkMacSystemFont, sans-serif'; 
+        ctx.textAlign = 'center';
+        
+        // 🚀 첫 번째 줄 (20px 체급에 맞춰 Y축을 정중앙에서 -15픽셀 플로팅!)
+        ctx.fillText('🔊 가동 버튼을 누르고', canvas.width / 2, canvas.height / 2 - 15);
+        
+        // 🚀 두 번째 줄 (윗줄이랑 절대 엉키지 않게 Y축을 +15픽셀 다운 정렬!)
+        ctx.fillText('아이폰 본체 바디 위에 시계를 올리셔용', canvas.width / 2, canvas.height / 2 + 15);
+        return;
+      }
+
+      let maxTicks = (currentBph / 3600) * MEASURE_DURATION; 
+      
+      let maxResBound = 0.015; 
+      for (let p of rawPoints) {
+        if (Math.abs(p.res) > maxResBound) maxResBound = Math.abs(p.res) * 1.1;
+      }
+      let scaleY = (canvas.height / 2) / maxResBound;
+
+      // 1. 원본 날것 녹색 점 (100% 솔리드 네온 그린 - 맑은 공명 평행선 확인용)
+      ctx.fillStyle = '#30d158';
+      for (let p of rawPoints) {
+        let canvasX = (p.x / maxTicks) * canvas.width;
+        let canvasY = (canvas.height / 2) - (p.res * scaleY);
+        
+        if (canvasX >= 0 && canvasX <= canvas.width) {
+          ctx.beginPath(); ctx.arc(canvasX, canvasY, 1.8, 0, 2 * Math.PI); ctx.fill();
+        }
+      }
+
+      // 2. 🚀 슬로프 가드 밴드를 통과해 절벽 궤적을 뚫고 완벽 결착된 노란 도트 체인!!
+      ctx.fillStyle = '#ffcc00'; 
+      for (let p of yellowDots) {
+        let canvasX = (p.x / maxTicks) * canvas.width;
+        let canvasY = (canvas.height / 2) - (p.res * scaleY);
+        
+        if (canvasX >= 0 && canvasX <= canvas.width) {
+          ctx.beginPath(); ctx.arc(canvasX, canvasY, 3.2, 0, 2 * Math.PI); ctx.fill();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
