@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v4.5</title>
+  <title>Leman Timegrapher Ultra v4.6</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -101,8 +101,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v4.5</h1>
-      <p class="subtitle">유니버설 융합 엔진 × 빈티지 하이비트 멀티 배리어</p>
+      <h1>Leman Timegrapher v4.6</h1>
+      <p class="subtitle">유니버설 디바이더 엔진 (오타 교정 무결점 판)</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -205,7 +205,9 @@
         resultDisplay.innerText = "아이폰 바디 위에 시계를 거치해 주셔용! 공명 파형 스캔 중입당.";
 
         microphone = audioCtx.createMediaStreamSource(stream);
-        gainNode = audioGain = audioCtx.createGain();
+        
+        // 🚀 [제니 반성단 완료] 유령 오타 완전히 지우고 결계를 정화했습당!! 크래시 해제!!
+        gainNode = audioCtx.createGain();
         gainNode.gain.value = 45.0; 
 
         bpfNode = audioCtx.createBiquadFilter();
@@ -337,6 +339,8 @@
                   let medianInterval = diffs[Math.floor(diffs.length / 2)];
                   let estimatedBph = Math.round((1 / medianInterval) * 3600);
 
+                  console.log("하드웨어 오리지널 추정 BPH:", estimatedBph);
+
                   let checkBph = estimatedBph;
                   if (checkBph > 39000) {
                     checkBph = checkBph / 2;
@@ -351,8 +355,6 @@
 
                   currentTargetInterval = 3600 / currentBph;
 
-                  // 🚀 [주인님 대천재적 아이디어 UI 전격 집행단]
-                  // 만약 36000 BPH 판정이 뜨면, 하단에 빈티지 18000 무브먼트의 중첩 가능성 경고 라벨을 세련되게 뙇 띄웁니당!!
                   if (currentBph === 36000) {
                     bpmDisplay.innerHTML = `36000 BPH<div style="font-size:12px; font-weight:600; color:#ff3b30; margin-top:2px; letter-spacing: -0.3px;">(또는 빈티지 무브먼트 18000 BPH일 수도 있습니다)</div>`;
                   } else {
@@ -367,7 +369,7 @@
 
               let measureTimeLeft = totalDuration - elapsedSeconds;
               timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
-              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 하이엔드 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>오토 디바이더 맵핑 제어망이 가동 중입당 🛡️</span>`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 하이엔드 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>주인님 표 알고리즘이 무브먼트 리듬을 완전 제어 중입당 🛡️</span>`;
             }
           } else {
             clearInterval(countdownInterval);
@@ -392,7 +394,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[주인님 표 반전 라벨] 총 ${yellowDots.length}개 노란 도트 정밀 분석 완공!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.6 락온 무결판] 총 ${yellowDots.length}개 노란 도트 누적 결과 반영 완료!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
@@ -443,30 +445,4 @@
       
       let maxResBound = 0.015; 
       for (let p of rawPoints) {
-        if (Math.abs(p.res) > maxResBound) maxResBound = Math.abs(p.res) * 1.1;
-      }
-      let scaleY = (canvas.height / 2) / maxResBound;
-
-      ctx.fillStyle = '#30d158';
-      for (let p of rawPoints) {
-        let canvasX = (p.x / maxTicks) * canvas.width;
-        let canvasY = (canvas.height / 2) - (p.res * scaleY);
-        
-        if (canvasX >= 0 && canvasX <= canvas.width) {
-          ctx.beginPath(); ctx.arc(canvasX, canvasY, 1.8, 0, 2 * Math.PI); ctx.fill();
-        }
-      }
-
-      ctx.fillStyle = '#ffcc00'; 
-      for (let p of yellowDots) {
-        let canvasX = (p.x / maxTicks) * canvas.width;
-        let canvasY = (canvas.height / 2) - (p.res * scaleY);
-        
-        if (canvasX >= 0 && canvasX <= canvas.width) {
-          ctx.beginPath(); ctx.arc(canvasX, canvasY, 3.2, 0, 2 * Math.PI); ctx.fill();
-        }
-      }
-    }
-  </script>
-</body>
-</html>
+        if (Math.
