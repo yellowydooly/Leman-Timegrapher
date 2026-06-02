@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v4.8</title>
+  <title>Leman Timegrapher Ultra v4.9</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -101,8 +101,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v4.8</h1>
-      <p class="subtitle">초정밀 실시간 가변 임계값 스마트 분석 엔진</p>
+      <h1>Leman Timegrapher v4.9</h1>
+      <p class="subtitle">초민감 하이엔드 무브먼트 스펙타클 계측 엔진</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -132,14 +132,13 @@
     let currentBph = 21600; 
     let currentTargetInterval = 3600 / 21600;
     
-    let threshold = 0.015;      
+    let threshold = 0.003;      
     let maxDetectedPeak = 0;    
     
     let measurementStartTime = 0;
     let rawPoints = [];   
     let yellowDots = [];  
 
-    // 🚀 [v4.8 핵심 결계] 모든 기계식 시계의 기본 비트 간격을 완벽 안전 수비하는 75ms 유니버설 락아웃 세팅
     let minPeakInterval = 0.075; 
 
     const DETECT_DURATION = 7; 
@@ -191,7 +190,9 @@
         isBphLocked = false; 
         currentBph = 21600;
         currentTargetInterval = 3600 / 21600;
-        threshold = 0.015; 
+        
+        // 🚀 [v4.9 초민감 튜닝] 초기 최소 threshold 장벽을 명품 시계용으로 대폭 전격 개방!!
+        threshold = 0.003; 
         maxDetectedPeak = 0; 
         minPeakInterval = 0.075; 
         bpmDisplay.innerText = "SCANNING";
@@ -235,10 +236,9 @@
             
             if (absVal > maxDetectedPeak) {
               maxDetectedPeak = absVal;
-              // 🚀 [v4.8 특임 개혁] 7초 스캔 단계에서도 큰 시계 박동음이 쾅 들어올 때마다 
-              // 실시간으로 threshold 문턱을 동적으로 자동 업그레이드!! (잔향 노이즈 파쇄 결계)
+              // 🚀 [v4.9 가변 비율 튜닝] 블랑팡의 미세 음량을 위해 하한선을 0.003으로 내리고 비율을 33%로 벼려내어 저가 시계 노이즈도 동시 필터링!
               if (!isBphLocked) {
-                threshold = Math.max(0.015, maxDetectedPeak * 0.40);
+                threshold = Math.max(0.003, maxDetectedPeak * 0.33);
               }
             }
 
@@ -334,8 +334,9 @@
                 rawPoints = [];
                 yellowDots = [];
                 
+                // 🚀 [본 계측 단계 민감도 대각성] 60초 측정 구간에서도 미세 정밀 계측을 위해 하한선을 0.005로 튜닝!
                 if (maxDetectedPeak > 0) {
-                  threshold = Math.min(0.08, Math.max(0.016, maxDetectedPeak * 0.45));
+                  threshold = Math.min(0.08, Math.max(0.005, maxDetectedPeak * 0.42));
                 }
 
                 if (scanTimestamps.length >= 5) {
@@ -347,20 +348,22 @@
                   let medianInterval = diffs[Math.floor(diffs.length / 2)];
                   let estimatedBph = Math.round((1 / medianInterval) * 3600);
 
-                  console.log("하드웨어 순수 축출 찐 BPH 수치:", estimatedBph);
+                  console.log("하드웨어 오리지널 추정 BPH:", estimatedBph);
 
-                  // 🚀 [v4.8 완전 정화 클린 매칭 결계] 
-                  // 실시간 가변 장벽이 찌꺼기를 완벽 분리수거했으므로, 꼼수 역산 없이 오리지널 대표 대역폭으로 한방 정렬 락온!!
-                  if (estimatedBph >= 16500 && estimatedBph <= 19500) currentBph = 18000;
-                  else if (estimatedBph > 19500 && estimatedBph <= 23500) currentBph = 21600; 
-                  else if (estimatedBph > 23500 && estimatedBph <= 26500) currentBph = 25200;
-                  else if (estimatedBph > 26500 && estimatedBph <= 33000) currentBph = 28800; 
-                  else if (estimatedBph > 33000 && estimatedBph <= 39000) currentBph = 36000; 
+                  let checkBph = estimatedBph;
+                  if (checkBph > 39000) {
+                    checkBph = checkBph / 2;
+                  }
+
+                  if (checkBph >= 16500 && checkBph <= 19500) currentBph = 18000;
+                  else if (checkBph > 19500 && checkBph <= 23500) currentBph = 21600; 
+                  else if (checkBph > 23500 && checkBph <= 26500) currentBph = 25200;
+                  else if (checkBph > 26500 && checkBph <= 33000) currentBph = 28800; 
+                  else if (checkBph > 33000 && checkBph <= 39000) currentBph = 36000; 
                   else currentBph = 28800; 
 
                   currentTargetInterval = 3600 / currentBph;
 
-                  // 60초 본 계측 락아웃을 해당 시계 주기의 60%로 가변 세팅
                   minPeakInterval = currentTargetInterval * 0.6; 
 
                   if (currentBph === 36000) {
@@ -378,7 +381,7 @@
 
               let measureTimeLeft = totalDuration - elapsedSeconds;
               timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
-              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 오토 어댑티브 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>실시간 가변 임계 레이더가 무소음 정렬 중입당 🛡️</span>`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 초민감 융합 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>블랑팡 전용 가변 임계 레이더망이 작동 중입당 🛡️</span>`;
             }
           } else {
             clearInterval(countdownInterval);
@@ -403,7 +406,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.8 실시간 튠] 총 ${yellowDots.length}개 노란 도트 정밀 벡터 추적 완료!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.9 초민감 락온] 총 ${yellowDots.length}개 노란 도트 정밀 연산 완공!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
