@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v4.7</title>
+  <title>Leman Timegrapher Ultra v4.8</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -101,8 +101,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v4.7</h1>
-      <p class="subtitle">다이내믹 가변 락아웃 × 스마트 주파수 디바이더 융합판</p>
+      <h1>Leman Timegrapher v4.8</h1>
+      <p class="subtitle">초정밀 실시간 가변 임계값 스마트 분석 엔진</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -132,15 +132,15 @@
     let currentBph = 21600; 
     let currentTargetInterval = 3600 / 21600;
     
-    let threshold = 0.008;      
+    let threshold = 0.015;      
     let maxDetectedPeak = 0;    
     
     let measurementStartTime = 0;
     let rawPoints = [];   
     let yellowDots = [];  
 
-    // 🚀 [v4.7 핵심 변수] 7초 초기 스캔 단계에서는 28800의 62.5ms 더블 피크까지 다 먹도록 장벽을 45ms로 전격 오픈합니당!
-    let minPeakInterval = 0.045; 
+    // 🚀 [v4.8 핵심 결계] 모든 기계식 시계의 기본 비트 간격을 완벽 안전 수비하는 75ms 유니버설 락아웃 세팅
+    let minPeakInterval = 0.075; 
 
     const DETECT_DURATION = 7; 
     const MEASURE_DURATION = 60; 
@@ -191,9 +191,9 @@
         isBphLocked = false; 
         currentBph = 21600;
         currentTargetInterval = 3600 / 21600;
-        threshold = 0.008; 
+        threshold = 0.015; 
         maxDetectedPeak = 0; 
-        minPeakInterval = 0.045; // 재시작 시 안전 마진 초기화
+        minPeakInterval = 0.075; 
         bpmDisplay.innerText = "SCANNING";
         drawGraph();
 
@@ -235,12 +235,16 @@
             
             if (absVal > maxDetectedPeak) {
               maxDetectedPeak = absVal;
+              // 🚀 [v4.8 특임 개혁] 7초 스캔 단계에서도 큰 시계 박동음이 쾅 들어올 때마다 
+              // 실시간으로 threshold 문턱을 동적으로 자동 업그레이드!! (잔향 노이즈 파쇄 결계)
+              if (!isBphLocked) {
+                threshold = Math.max(0.015, maxDetectedPeak * 0.40);
+              }
             }
 
             if (inputArray[i] > threshold) {
               let currentTime = audioCtx.currentTime + (i / audioCtx.sampleRate);
               
-              // 🚀 [v4.7 코어 패치] 고정 0.08초 대신 다이내믹 가변 변수인 minPeakInterval을 추적합니당!
               if (currentTime - lastPeakTime > minPeakInterval) {
                 let currentPulseTime = currentTime;
                 lastPeakTime = currentPulseTime;
@@ -343,26 +347,21 @@
                   let medianInterval = diffs[Math.floor(diffs.length / 2)];
                   let estimatedBph = Math.round((1 / medianInterval) * 3600);
 
-                  console.log("하드웨어 순수 감지 BPH:", estimatedBph);
+                  console.log("하드웨어 순수 축출 찐 BPH 수치:", estimatedBph);
 
-                  let checkBph = estimatedBph;
-                  if (checkBph > 39000) {
-                    checkBph = checkBph / 2;
-                  }
-
-                  if (checkBph >= 16500 && checkBph <= 19500) currentBph = 18000;
-                  else if (checkBph > 19500 && checkBph <= 23500) currentBph = 21600; 
-                  else if (checkBph > 23500 && checkBph <= 26500) currentBph = 25200;
-                  else if (checkBph > 26500 && checkBph <= 33000) currentBph = 28800; 
-                  else if (checkBph > 33000 && checkBph <= 39000) currentBph = 36000; 
+                  // 🚀 [v4.8 완전 정화 클린 매칭 결계] 
+                  // 실시간 가변 장벽이 찌꺼기를 완벽 분리수거했으므로, 꼼수 역산 없이 오리지널 대표 대역폭으로 한방 정렬 락온!!
+                  if (estimatedBph >= 16500 && estimatedBph <= 19500) currentBph = 18000;
+                  else if (estimatedBph > 19500 && estimatedBph <= 23500) currentBph = 21600; 
+                  else if (estimatedBph > 23500 && estimatedBph <= 26500) currentBph = 25200;
+                  else if (estimatedBph > 26500 && estimatedBph <= 33000) currentBph = 28800; 
+                  else if (estimatedBph > 33000 && estimatedBph <= 39000) currentBph = 36000; 
                   else currentBph = 28800; 
 
                   currentTargetInterval = 3600 / currentBph;
 
-                  // 🚀 [v4.7 코어 대개혁 결계] 60초 본 계측 시에는 강제 휴식기를 
-                  // 해당 시계 표준 주기의 60%로 가변 설정하여 오차 도트 차트에 잔향 유입을 원천 봉쇄합니당!!
+                  // 60초 본 계측 락아웃을 해당 시계 주기의 60%로 가변 세팅
                   minPeakInterval = currentTargetInterval * 0.6; 
-                  console.log("🔒 본 계측 적용 다이내믹 가변 락아웃 장벽(초):", minPeakInterval);
 
                   if (currentBph === 36000) {
                     bpmDisplay.innerHTML = `36000 BPH<div style="font-size:12px; font-weight:600; color:#ff3b30; margin-top:2px; letter-spacing: -0.3px;">(또는 빈티지 무브먼트 18000 BPH일 수도 있습니다)</div>`;
@@ -379,7 +378,7 @@
 
               let measureTimeLeft = totalDuration - elapsedSeconds;
               timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
-              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 다이내믹 락아웃 모드!</b><br><span style='font-size:13px; color:#30d158;'>주인님 표 디바이더 기전이 주파수 혼선을 완벽 평정했습당 🛡️</span>`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 오토 어댑티브 수호 모드!</b><br><span style='font-size:13px; color:#30d158;'>실시간 가변 임계 레이더가 무소음 정렬 중입당 🛡️</span>`;
             }
           } else {
             clearInterval(countdownInterval);
@@ -404,7 +403,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.7 완전체] 총 ${yellowDots.length}개 노란 도트 정밀 벡터 추적 완료!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.8 실시간 튠] 총 ${yellowDots.length}개 노란 도트 정밀 벡터 추적 완료!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
