@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v4.6</title>
+  <title>Leman Timegrapher Ultra v4.7</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -101,8 +101,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v4.6</h1>
-      <p class="subtitle">유니버설 디바이더 엔진 (오타 교정 무결점 판)</p>
+      <h1>Leman Timegrapher v4.7</h1>
+      <p class="subtitle">주인님 표 스마트 주파수 디바이더 하이엔드 엔진</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -162,7 +162,7 @@
           audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
         if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
+          await audioCtx.resume();
         }
       } catch (e) {
         console.error("AudioContext 가동 실패:", e);
@@ -206,7 +206,6 @@
 
         microphone = audioCtx.createMediaStreamSource(stream);
         
-        // 🚀 [제니 반성단 완료] 유령 오타 완전히 지우고 결계를 정화했습당!! 크래시 해제!!
         gainNode = audioCtx.createGain();
         gainNode.gain.value = 45.0; 
 
@@ -394,7 +393,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.6 락온 무결판] 총 ${yellowDots.length}개 노란 도트 누적 결과 반영 완료!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[v4.7 락온 무결판] 총 ${yellowDots.length}개 노란 도트 누적 결과 반영 완료!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
@@ -445,4 +444,30 @@
       
       let maxResBound = 0.015; 
       for (let p of rawPoints) {
-        if (Math.
+        if (Math.abs(p.res) > maxResBound) maxResBound = Math.abs(p.res) * 1.1;
+      }
+      let scaleY = (canvas.height / 2) / maxResBound;
+
+      ctx.fillStyle = '#30d158';
+      for (let p of rawPoints) {
+        let canvasX = (p.x / maxTicks) * canvas.width;
+        let canvasY = (canvas.height / 2) - (p.res * scaleY);
+        
+        if (canvasX >= 0 && canvasX <= canvas.width) {
+          ctx.beginPath(); ctx.arc(canvasX, canvasY, 1.8, 0, 2 * Math.PI); ctx.fill();
+        }
+      }
+
+      ctx.fillStyle = '#ffcc00'; 
+      for (let p of yellowDots) {
+        let canvasX = (p.x / maxTicks) * canvas.width;
+        let canvasY = (canvas.height / 2) - (p.res * scaleY);
+        
+        if (canvasX >= 0 && canvasX <= canvas.width) {
+          ctx.beginPath(); ctx.arc(canvasX, canvasY, 3.2, 0, 2 * Math.PI); ctx.fill();
+        }
+      }
+    }
+  </script>
+</body>
+</html>
