@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Leman Timegrapher Ultra v4.1</title>
+  <title>Leman Timegrapher Ultra v4.2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <style>
     :root {
@@ -100,8 +100,8 @@
 
   <div class="wrapper">
     <div class="card">
-      <h1>Leman Timegrapher v4.1</h1>
-      <p class="subtitle">레망 21600 가디언 결계 × 슬로프 벡터 트래킹</p>
+      <h1>Leman Timegrapher v4.2</h1>
+      <p class="subtitle">황금 밸런스 융합 엔진 (레망 21600 프로 에디션)</p>
       
       <div id="timer-display" class="timer-box" style="display: none;">⏱️ 엔진 가동 준비 중...</div>
       
@@ -187,7 +187,7 @@
         isBphLocked = false; 
         currentBph = 21600;
         currentTargetInterval = 3600 / 21600;
-        threshold = 0.008; 
+        threshold = 0.008; // 🚀 초기 스캔은 모든 소리를 맑게 잡도록 초민감 모드로 출발!
         maxDetectedPeak = 0; 
         bpmDisplay.innerText = "SCANNING";
         drawGraph();
@@ -315,10 +315,6 @@
 
           if (overallRemaining > 0) {
             if (elapsedSeconds <= DETECT_DURATION) {
-              // 🚀 [v4.1 패치] 하드캡을 박살내고 최고 피크 볼륨의 70%선까지 장벽 문턱을 극적으로 가동합니당!
-              if (maxDetectedPeak > 0) {
-                threshold = Math.max(0.02, maxDetectedPeak * 0.70);
-              }
               timerDisplay.innerText = `🔎 스펙 분석 중... ${elapsedSeconds}/${DETECT_DURATION}초`;
             } else {
               if (!isBphLocked) {
@@ -327,9 +323,9 @@
                 rawPoints = [];
                 yellowDots = [];
                 
-                // 본 계측 단계에서도 잔향 컷트를 위해 장벽을 맥스 피크의 75%로 전격 대개혁!
+                // 🚀 [주인님 설계 이식] 60초 본 계측용 오디오 장벽은 무결성이 검증된 v3.9 스펙(45% 및 안전 상한선 마진)으로 원상복구!!!
                 if (maxDetectedPeak > 0) {
-                  threshold = Math.max(0.02, maxDetectedPeak * 0.75);
+                  threshold = Math.min(0.08, Math.max(0.016, maxDetectedPeak * 0.45));
                 }
 
                 if (scanTimestamps.length >= 5) {
@@ -341,15 +337,12 @@
                   let medianInterval = diffs[Math.floor(diffs.length / 2)];
                   let estimatedBph = Math.round((1 / medianInterval) * 3600);
 
-                  console.log("계산된 날것의 추정 BPH 주파수 수치:", estimatedBph);
-
-                  // 🚀 [v4.1 결계 핵심: 인공지능 레망 더블피크 구출 알고리즘 적용]
+                  // 🚀 [v4.2 핵심 결계] 더블 피크 구출 회로는 7초 판정단에만 예리하게 유지합니당!
                   if (estimatedBph >= 16500 && estimatedBph <= 19500) currentBph = 18000;
-                  // 레망의 찐 주기(21600) 혹은 더블 피크 소음 래핑 수치(39000~47000)가 잡히면 무조건 21600으로 강제 락온!!
                   else if ((estimatedBph > 19500 && estimatedBph <= 23500) || (estimatedBph > 39000 && estimatedBph <= 47000)) currentBph = 21600;
                   else if (estimatedBph > 23500 && estimatedBph <= 26500) currentBph = 25200;
                   else if (estimatedBph > 26500 && estimatedBph <= 33000) currentBph = 28800;
-                  else currentBph = 21600; // 맹목적 28800 디폴트를 버리고 하이엔드 21600으로 예외 안전장치 마진 설정!
+                  else currentBph = 21600; 
 
                   currentTargetInterval = 3600 / currentBph;
                   bpmDisplay.innerText = currentBph + " BPH";
@@ -362,7 +355,7 @@
 
               let measureTimeLeft = totalDuration - elapsedSeconds;
               timerDisplay.innerText = `⏱️ 정밀 오차 계측 중... ${measureTimeLeft}초`;
-              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 전용 필터 락온 완료!</b><br><span style='font-size:13px; color:#30d158;'>스마트 스캔 배리어가 21600 심박수를 무결점으로 정렬 중입당 🛡️</span>`;
+              resultDisplay.innerHTML = `🔒 <b>[${currentBph} BPH] 황금 밸런스 엔진 기동!</b><br><span style='font-size:13px; color:#30d158;'>21600 찐 주파수 락온 및 오차 도트 추적 시스템 수호 중 🛡️</span>`;
             }
           } else {
             clearInterval(countdownInterval);
@@ -387,7 +380,7 @@
                 let errorSecondsPerDay = ((currentTargetInterval - m) / currentTargetInterval) * 86400;
                 
                 let sign = errorSecondsPerDay >= 0 ? "+" : "";
-                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[레망 구출 대성공] 총 ${yellowDots.length}개 찐 노란 도트 기반 무결점 결산 완료!</span>`;
+                resultDisplay.innerHTML = `📈 <b>최종 일오차결과: ${sign}${errorSecondsPerDay.toFixed(1)}초/일</b><br><span style='font-size:12px; color:#86868b;'>[주인님 표 황금비 튠] 총 ${yellowDots.length}개 노란 도트 기반 완벽 매칭!</span>`;
               }
             } else {
               bpmDisplay.innerText = "-- BPH";
@@ -410,13 +403,13 @@
       }
     }
 
+    // [drawGraph 영역은 18px 2줄 줄바꿈 가이드 레이아웃 완벽 유지 상태입당!]
     function drawGraph() {
       const canvas = document.getElementById('timegrapher-canvas');
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // 격자판
       ctx.strokeStyle = '#2c2c2e'; ctx.lineWidth = 1;
       for (let y = 36; y < canvas.height; y += 36) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
@@ -443,7 +436,6 @@
       }
       let scaleY = (canvas.height / 2) / maxResBound;
 
-      // 1. 원본 날것 녹색 점 (100% 솔리드 네온 그린)
       ctx.fillStyle = '#30d158';
       for (let p of rawPoints) {
         let canvasX = (p.x / maxTicks) * canvas.width;
@@ -454,7 +446,6 @@
         }
       }
 
-      // 2. 슬로프 가드 밴드를 통과해 완벽 결착된 노란 도트 체인
       ctx.fillStyle = '#ffcc00'; 
       for (let p of yellowDots) {
         let canvasX = (p.x / maxTicks) * canvas.width;
